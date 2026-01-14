@@ -35,3 +35,8 @@ class VoteSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+    def validate_title(self, value):
+        if len(value) < 3:
+            raise serializers.ValidationError("Название номинации слишком короткое")
+        return value
+

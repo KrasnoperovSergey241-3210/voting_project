@@ -16,4 +16,5 @@ router.register('votes', VoteViewSet, basename='vote')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('', include('polls.urls')),
 ]
