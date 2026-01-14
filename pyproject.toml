@@ -1,0 +1,6 @@
+[tool.ruff]
+line-length = 88
+exclude = ["migrations", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
