@@ -1,13 +1,11 @@
 from django.contrib import admin
-from django.db.models import Count
 from django.utils.html import format_html
-
 from import_export import resources
-from import_export.admin import ImportExportModelAdmin, ExportMixin
+from import_export.admin import ExportMixin, ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Candidate, Nomination, Vote
-from .models import JuryMember
+from .models import Candidate, JuryMember, Nomination, Vote
+
 
 class VoteResource(resources.ModelResource):
     class Meta:
@@ -54,25 +52,22 @@ class NominationAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
 
 @admin.register(Candidate)
 class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
-    list_display = ('id', 'name', 'nomination', 'votes_count')
+    list_display = ('id', 'name', 'nomination', 
+                    'votes_count', 'has_photo', 'photo_preview')
     list_display_links = ('id', 'name')
     list_filter = ('nomination',)
     search_fields = ('name', 'nomination__title')
-    raw_id_fields = ('nomination',)
     inlines = (VoteInline,)
 
     fieldsets = (
         ("Основная информация", {
-            "fields": ('name', 'nomination')
+            "fields": ('name', 'nomination', 'photo', 'slug')
         }),
     )
 
     @admin.display(description="Кол-во голосов")
     def votes_count(self, obj):
         return obj.votes.count()
-    
-    list_display = ('id', 'name', 'nomination', 'votes_count', 'has_photo', 'photo_preview')
-    list_display_links = ('id', 'name')
 
     @admin.display(description="Фото", ordering=False)
     def photo_preview(self, obj):

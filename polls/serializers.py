@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Candidate, Nomination, Vote, JuryMember
+from .models import Candidate, JuryMember, Nomination, Vote
 
 
 class NominationSerializer(serializers.ModelSerializer):

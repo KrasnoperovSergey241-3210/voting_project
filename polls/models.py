@@ -26,7 +26,7 @@ class Nomination(models.Model):
     class Meta:
         verbose_name = "Номинация"
         verbose_name_plural = "Номинации"
-        ordering = ['title']
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title
@@ -34,14 +34,18 @@ class Nomination(models.Model):
 
 class Candidate(models.Model):
     nomination = models.ForeignKey(
-        Nomination, on_delete=models.CASCADE, related_name='candidates', verbose_name="Номинация"
+        Nomination, on_delete=models.CASCADE, 
+        related_name='candidates', verbose_name="Номинация"
     )
     name = models.CharField(max_length=255, verbose_name="Имя кандидата")
     photo = models.ImageField(
-        upload_to='candidates/%Y/%m/%d/', blank=True, null=True, verbose_name="Фото кандидата"
+        upload_to='candidates/%Y/%m/%d/', 
+        blank=True, null=True, verbose_name="Фото кандидата"
     )
-    slug = models.SlugField(max_length=255, unique=True, blank=True, verbose_name="Slug (автогенерируется)")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
+    slug = models.SlugField(max_length=255, unique=True, 
+                            blank=True, verbose_name="Slug (автогенерируется)")
+    created_at = models.DateTimeField(auto_now_add=True, 
+                                      verbose_name="Создано")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
     created_by = models.ForeignKey(
         User,
@@ -88,9 +92,12 @@ class Candidate(models.Model):
         super().save(*args, **kwargs)
 
 class FavoriteCandidate(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
-    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, verbose_name="Кандидат")
-    added_at = models.DateTimeField(default=timezone.now, db_index=True, verbose_name="Добавлено")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, 
+                             verbose_name="Пользователь")
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, 
+                                  verbose_name="Кандидат")
+    added_at = models.DateTimeField(default=timezone.now, db_index=True, 
+                                    verbose_name="Добавлено")
     note = models.CharField(max_length=200, blank=True, verbose_name="Заметка")
 
     class Meta:
@@ -138,11 +145,17 @@ class Vote(models.Model):
                 fields=['user', 'candidate'],
                 name='unique_vote_per_candidate'
             ),
-            models.UniqueConstraint(
-                fields=['user', 'candidate__nomination'],
-                name='unique_vote_per_nomination'
-            ),
         ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if Vote.objects.filter(
+            user=self.user,
+            candidate__nomination=self.candidate.nomination
+        ).exclude(pk=self.pk).exists():
+            raise ValidationError(
+                "Вы уже голосовали в этой номинации"
+            )
 
     def __str__(self):
         return f"{self.user} → {self.candidate}"

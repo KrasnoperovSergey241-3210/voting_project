@@ -7,9 +7,12 @@ from .models import Candidate
 class CandidateFilter(django_filters.FilterSet):
     nomination = django_filters.NumberFilter(field_name='nomination_id')
     has_photo = django_filters.BooleanFilter(method='filter_has_photo')
-    has_votes = django_filters.BooleanFilter(method='filter_has_votes', label="Есть голоса")
-    min_votes = django_filters.NumberFilter(method='filter_min_votes', label="Минимум голосов")
-    voted_by_me = django_filters.BooleanFilter(method='filter_voted_by_me', label="Я голосовал")
+    has_votes = django_filters.BooleanFilter(method='filter_has_votes',
+                                             label="Есть голоса")
+    min_votes = django_filters.NumberFilter(method='filter_min_votes',
+                                            label="Минимум голосов")
+    voted_by_me = django_filters.BooleanFilter(method='filter_voted_by_me',
+                                               label="Я голосовал")
 
     has_jury = django_filters.BooleanFilter(
         method='filter_has_jury',
@@ -18,7 +21,8 @@ class CandidateFilter(django_filters.FilterSet):
 
     class Meta:
         model = Candidate
-        fields = ['nomination', 'has_photo', 'has_votes', 'min_votes', 'voted_by_me']
+        fields = ['nomination', 'has_photo',
+                  'has_votes', 'min_votes', 'voted_by_me']
 
     def filter_has_jury(self, queryset, name, value):
         if value:

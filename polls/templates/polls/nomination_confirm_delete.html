@@ -62,10 +62,43 @@
         max-width: 400px;
         justify-content: space-around;
     }
+
+    header {
+        border-bottom: solid 2px #ffffff;
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    h1 {
+        grid-column: 2;
+        text-align: center;
+    }
+
+    .exit-form {
+        grid-column: 3;
+        margin-right: 30px;
+        display: grid;
+    }
+
+    .exit-button {
+        padding: 10px;
+        text-align: center;
+        justify-self: right;
+        max-width: 140px;
+        max-height: 50px;
+        align-self: center;
+    }
     </style>
 <body>
     <header>
 <h1>Удалить номинацию: {{ object.title }}</h1>
+    {% if user.is_authenticated %}
+        <form class='exit-form' method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class='exit-button' type="submit">Выйти ({{ user.username }})</button>
+        </form>
+    {% endif %}
 </header>
 
 <div>

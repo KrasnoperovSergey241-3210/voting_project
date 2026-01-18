@@ -132,3 +132,10 @@ REST_FRAMEWORK = {
         'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_REDIRECT_URL = '/nominations/'
+LOGOUT_REDIRECT_URL = '/nominations/'
+LOGIN_URL = '/login/'

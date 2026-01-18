@@ -1,23 +1,35 @@
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from rest_framework.pagination import PageNumberPagination
-
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .filters import CandidateFilter
-from .models import Candidate, Nomination, Vote, JuryMember
+from .models import Candidate, JuryMember, Nomination, Vote
 from .serializers import (
     CandidateSerializer,
+    JuryMemberSerializer,
     NominationSerializer,
     VoteSerializer,
-    JuryMemberSerializer,
 )
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 12
@@ -174,10 +186,11 @@ class JuryMemberViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-class CandidateDetailView(DetailView):
+class CandidateDetailView(LoginRequiredMixin, DetailView):
     model = Candidate
     template_name = 'polls/candidate_detail.html'
     context_object_name = 'candidate'
+    login_url = '/login/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -188,11 +201,12 @@ class CandidateDetailView(DetailView):
         context['vote_count'] = self.object.votes.count()
         return context
 
-class NominationListView(ListView):
+class NominationListView(LoginRequiredMixin, ListView):
     model = Nomination
     template_name = 'polls/nomination_list.html'
     context_object_name = 'nominations'
     paginate_by = 5
+    login_url = '/login/'
 
 
 class NominationCreateView(CreateView):
@@ -213,3 +227,49 @@ class NominationDeleteView(DeleteView):
     model = Nomination
     template_name = 'polls/nomination_confirm_delete.html'
     success_url = reverse_lazy('nomination_list')
+
+class CandidatesByNominationView(ListView):
+    model = Candidate
+    template_name = 'polls/candidates_by_nomination.html'
+    context_object_name = 'candidates'
+    paginate_by = 5
+
+    def get_queryset(self):
+        nomination_id = self.kwargs.get('nomination_id')
+        return Candidate.objects.filter(nomination_id=nomination_id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['nomination'] = Nomination.objects.get(pk=self.kwargs['nomination_id'])
+        return context
+
+@login_required
+def vote_for_candidate(request, pk):
+    if request.method == 'POST':
+        candidate = get_object_or_404(Candidate, pk=pk)
+        
+        if Vote.objects.filter(
+            user=request.user,
+            candidate__nomination=candidate.nomination
+        ).exists():
+            messages.error(request, "Вы уже голосовали в этой номинации!")
+        else:
+            Vote.objects.create(user=request.user, candidate=candidate)
+            messages.success(request, f"Голос за {candidate.name} учтён!")
+            
+        return redirect('candidate_detail', pk=pk)
+    
+    return redirect('candidate_detail', pk=pk)
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Регистрация успешна! Добро пожаловать!')
+            return redirect('nomination_list')
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'registration/register.html', {'form': form})
