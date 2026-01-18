@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Candidate, Nomination, Vote
+from .models import Candidate, Nomination, Vote, JuryMember
 
 
 class NominationSerializer(serializers.ModelSerializer):
@@ -10,18 +10,26 @@ class NominationSerializer(serializers.ModelSerializer):
 
 
 class CandidateSerializer(serializers.ModelSerializer):
+    nomination = NominationSerializer(read_only=True)
+    photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Candidate
         fields = '__all__'
+
+    def get_photo_url(self, obj):
+        if obj.photo:
+            return obj.photo.url
+        return None
 
 
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ('id', 'candidate', 'created_at')
+        read_only_fields = ('created_at',)
 
     def validate(self, attrs):
-        """Кастомная логика валидации"""
         user = self.context['request'].user
         candidate = attrs['candidate']
         nomination = candidate.nomination
@@ -35,8 +43,14 @@ class VoteSerializer(serializers.ModelSerializer):
             )
 
         return attrs
-    def validate_title(self, value):
-        if len(value) < 3:
-            raise serializers.ValidationError("Название номинации слишком короткое")
-        return value
 
+
+class JuryMemberSerializer(serializers.ModelSerializer):
+    nominations = serializers.PrimaryKeyRelatedField(
+        queryset=Nomination.objects.all(),
+        many=True
+    )
+
+    class Meta:
+        model = JuryMember
+        fields = ('id', 'name', 'nominations')

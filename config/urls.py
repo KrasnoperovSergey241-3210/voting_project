@@ -6,12 +6,14 @@ from polls.views import (
     CandidateViewSet,
     NominationViewSet,
     VoteViewSet,
+    JuryMemberViewSet,
 )
 
 router = DefaultRouter()
 router.register('nominations', NominationViewSet)
 router.register('candidates', CandidateViewSet)
 router.register('votes', VoteViewSet, basename='vote')
+router.register('jury-members', JuryMemberViewSet, basename='jury-member')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
