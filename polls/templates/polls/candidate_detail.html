@@ -100,7 +100,6 @@
     }
 
     .voted-info {
-        display: inline-block;
         background-color: #222222;
         color: #ffffff;
         border: 2px solid #ffffff;
@@ -110,6 +109,8 @@
         font-size: 1.1rem;
         text-decoration: none;
         text-align: center;
+        margin: 0 auto;
+        max-width: 370px;
     }
 
     header {
@@ -140,6 +141,11 @@
 
     .exit-button {
         padding: 8px 20px;
+    }
+
+    .vote_form {
+        display: flex;
+        justify-content: center;
     }
 </style>
 
@@ -197,9 +203,9 @@
                     Вы уже проголосовали за этого кандидата
                 </div>
             {% else %}
-                <form method="post" action="{% url 'vote_for_candidate' candidate.pk %}">
+                <form class='vote_form' method="post" action="{% url 'vote_for_candidate' candidate.pk %}">
                 {% csrf_token %}
-                  <button type="submit" class="vote-button">
+                  <button class='vote_button' type="submit" class="vote-button">
                     Проголосовать за {{ candidate.name }}
                   </button>
                 </form>
