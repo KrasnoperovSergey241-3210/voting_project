@@ -1,11 +1,71 @@
 from django.contrib import admin
+from django.db.models import Count
 from django.utils.html import format_html
+
 from import_export import resources
-from import_export.admin import ExportMixin, ImportExportModelAdmin
+from import_export.admin import ImportExportModelAdmin, ExportMixin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Candidate, JuryMember, Nomination, Vote
+from .models import Candidate, Nomination, Vote
+from .models import JuryMember
 
+class VoteInline(admin.TabularInline):
+    model = Vote
+    fields = ('user', 'created_at')
+    readonly_fields = ('user', 'created_at')
+    can_delete = False
+    extra = 0
+
+    def has_add_permission(self, request, obj):
+        return False
+
+class NominationAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
+    list_display = ('id', 'title', 'is_active', 'candidates_count', 'created_at')
+    list_display_links = ('id', 'title')
+    list_filter = ('is_active',)
+    search_fields = ('title',)
+    readonly_fields = ('created_at', 'updated_at')
+    fields = ('title', 'is_active', 'created_at', 'updated_at')
+
+    @admin.display(description="Кол-во кандидатов")
+    def candidates_count(self, obj):
+        return obj.candidates.count()
+    candidates_count.short_description = "Кол-во кандидатов"
+
+@admin.register(Candidate)
+class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
+    list_display = ('id', 'name', 'nomination', 'votes_count', 'has_photo', 'photo_preview')
+    list_display_links = ('id', 'name')
+    list_filter = ('nomination',)
+    search_fields = ('name', 'nomination__title')
+    raw_id_fields = ('nomination',)
+    inlines = (VoteInline,)
+    fieldsets = (
+        ("Основная информация", {
+            "fields": ('name', 'nomination', 'photo')
+        }),
+    )
+    readonly_fields = ('photo_preview',)
+
+    @admin.display(description="Кол-во голосов")
+    def votes_count(self, obj):
+        return obj.votes.count()
+    votes_count.short_description = "Кол-во голосов"
+
+    @admin.display(description="Фото", ordering=False)
+    def photo_preview(self, obj):
+        if obj.photo:
+            return format_html(
+                '<img src="{}" style="max-height: 60px;"/>',
+                obj.photo.url
+            )
+        return "—"
+    photo_preview.short_description = "Фото" 
+
+    @admin.display(description="Есть фото", boolean=True)
+    def has_photo(self, obj):
+        return bool(obj.photo)
+    has_photo.short_description = "Есть фото"
 
 class VoteResource(resources.ModelResource):
     class Meta:
@@ -23,64 +83,8 @@ class VoteResource(resources.ModelResource):
         return vote.created_at.strftime("%d.%m.%Y %H:%M")
 
     def get_export_queryset(self, request):
-        return super().get_export_queryset(request).filter(
-            candidate__nomination__is_active=True
-        ).select_related('candidate__nomination', 'user')
-
-class VoteInline(admin.TabularInline):
-    model = Vote
-    extra = 0
-    readonly_fields = ('user', 'created_at')
-    raw_id_fields = ('user',)
-
-
-@admin.register(Nomination)
-class NominationAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
-    list_display = ('id', 'title', 'is_active', 'candidates_count')
-    list_display_links = ('id', 'title')
-    list_filter = ('is_active',)
-    search_fields = ('title',)
-    readonly_fields = ()
-    ordering = ('title',)
-
-    @admin.display(description="Кол-во кандидатов")
-    def candidates_count(self, obj):
-        return obj.candidates.count()
-    
-    list_display = ('id', 'title', 'is_active', 'candidates_count', 'created_at')
-    readonly_fields = ('created_at', 'updated_at')
-
-@admin.register(Candidate)
-class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
-    list_display = ('id', 'name', 'nomination', 
-                    'votes_count', 'has_photo', 'photo_preview')
-    list_display_links = ('id', 'name')
-    list_filter = ('nomination',)
-    search_fields = ('name', 'nomination__title')
-    inlines = (VoteInline,)
-
-    fieldsets = (
-        ("Основная информация", {
-            "fields": ('name', 'nomination', 'photo', 'slug')
-        }),
-    )
-
-    @admin.display(description="Кол-во голосов")
-    def votes_count(self, obj):
-        return obj.votes.count()
-
-    @admin.display(description="Фото", ordering=False)
-    def photo_preview(self, obj):
-        if obj.photo:
-            return format_html(
-                '<img src="{}" style="max-height: 60px;"/>',
-                obj.photo.url
-            )
-        return "—"
-
-    @admin.display(description="Есть фото", boolean=True)
-    def has_photo(self, obj):
-        return bool(obj.photo)
+        """Кастомизация queryset для экспорта"""
+        return Vote.objects.filter(candidate__nomination__is_active=True)
 
 @admin.register(Vote)
 class VoteAdmin(SimpleHistoryAdmin, ExportMixin, admin.ModelAdmin):
@@ -97,6 +101,7 @@ class VoteAdmin(SimpleHistoryAdmin, ExportMixin, admin.ModelAdmin):
     @admin.display(description="Кандидат / Пользователь")
     def candidate_and_user(self, obj):
         return f"{obj.candidate.name} — {obj.user.username}"
+    candidate_and_user.short_description = "Кандидат / Пользователь"
 
 @admin.register(JuryMember)
 class JuryMemberAdmin(admin.ModelAdmin):

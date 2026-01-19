@@ -6,6 +6,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
+from datetime import timedelta
+
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -71,6 +74,41 @@ class NominationViewSet(ModelViewSet):
             .values('id', 'title', 'candidate_count', 'total_votes')
         )
         return Response(data)
+    
+    @action(detail=False, methods=['get'])
+    def recently_active_with_votes(self, request):
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        q = Q(created_at__gte=thirty_days_ago) & Q(is_active=True) | \
+            Q(votes__count__gte=5) & ~Q(is_active=False)
+        queryset = self.get_queryset().filter(q).distinct()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def high_activity_or_old_active(self, request):
+        ninety_days_ago = timezone.now() - timedelta(days=90)
+        q = Q(candidates__count__gt=10) & Q(is_active=True) | \
+            Q(created_at__lte=ninety_days_ago) & ~Q(is_active=False)
+        queryset = self.get_queryset().filter(q).distinct()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def controversial_or_trending(self, request):
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        q = Q(votes__count__lt=3) & Q(is_active=True) | \
+            Q(votes__created_at__gte=seven_days_ago, votes__count__gt=5) & ~Q(is_active=False)
+        queryset = self.get_queryset().filter(q).distinct()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def jury_active_or_no_jury(self, request):
+        q = Q(jury_members__is_active=True) & Q(is_active=True) | \
+            Q(jury_members=None) & Q(candidates__votes__count__gt=8) & ~Q(is_active=False)
+        queryset = self.get_queryset().filter(q).distinct()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class CandidateViewSet(ModelViewSet):
     queryset = Candidate.objects.all()
@@ -209,26 +247,26 @@ class NominationListView(LoginRequiredMixin, ListView):
     login_url = '/login/'
 
 
-class NominationCreateView(CreateView):
+class NominationCreateView(LoginRequiredMixin, CreateView):
     model = Nomination
     fields = ['title', 'is_active']
     template_name = 'polls/nomination_form.html'
     success_url = reverse_lazy('nomination_list')
 
 
-class NominationUpdateView(UpdateView):
+class NominationUpdateView(LoginRequiredMixin, UpdateView):
     model = Nomination
     fields = ['title', 'is_active']
     template_name = 'polls/nomination_form.html'
     success_url = reverse_lazy('nomination_list')
 
 
-class NominationDeleteView(DeleteView):
+class NominationDeleteView(LoginRequiredMixin, DeleteView):
     model = Nomination
     template_name = 'polls/nomination_confirm_delete.html'
     success_url = reverse_lazy('nomination_list')
 
-class CandidatesByNominationView(ListView):
+class CandidatesByNominationView(LoginRequiredMixin, ListView):
     model = Candidate
     template_name = 'polls/candidates_by_nomination.html'
     context_object_name = 'candidates'

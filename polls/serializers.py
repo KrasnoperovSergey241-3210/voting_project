@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from django.utils import timezone
 from .models import Candidate, JuryMember, Nomination, Vote
 
 
@@ -7,6 +7,26 @@ class NominationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Nomination
         fields = '__all__'
+
+    def to_internal_value(self, data):
+        instance = super().to_internal_value(data)
+
+        if self.instance:
+            created_at = self.instance.created_at
+            updated_at = instance.get('updated_at', timezone.now())
+        else:
+            created_at = timezone.now()
+            updated_at = instance.get('updated_at', created_at)
+
+        if created_at >= updated_at:
+            raise serializers.ValidationError(
+                {
+                    'created_at': 'Дата создания должна быть раньше даты обновления',
+                    'updated_at': 'Дата обновления должна быть позже даты создания'
+                }
+            )
+
+        return instance
 
 
 class CandidateSerializer(serializers.ModelSerializer):
