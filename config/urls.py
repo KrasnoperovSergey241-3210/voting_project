@@ -14,21 +14,26 @@ from polls.views import (
 )
 
 router = DefaultRouter()
-router.register('nominations', NominationViewSet)
-router.register('candidates', CandidateViewSet)
-router.register('votes', VoteViewSet, basename='vote')
-router.register('jury-members', JuryMemberViewSet, basename='jury-member')
+router.register("nominations", NominationViewSet)
+router.register("candidates", CandidateViewSet)
+router.register("votes", VoteViewSet, basename="vote")
+router.register("jury-members", JuryMemberViewSet, basename="jury-member")
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('', include('polls.urls')),
-    path('login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html'),
-         name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='nomination_list'),
-         name='logout'),
-    path('register/', register, name='register'),
+    path("admin/", admin.site.urls),
+    path("api/", include(router.urls)),
+    path("", include("polls.urls")),
+    path(
+        "login/",
+        auth_views.LoginView.as_view(template_name="registration/login.html"),
+        name="login",
+    ),
+    path(
+        "logout/",
+        auth_views.LogoutView.as_view(next_page="nomination_list"),
+        name="logout",
+    ),
+    path("register/", register, name="register"),
 ]
 
 if settings.DEBUG:
