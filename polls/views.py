@@ -142,7 +142,7 @@ class CandidateViewSet(ModelViewSet):
     def complex_filter(self, request):
         user = request.user
         queryset = Candidate.objects.filter(
-            (Q(name__icontains="А") & ~Q(votes__user=user))
+            (Q(name__icontains="user") & ~Q(votes__user=user))
             | Q(nomination__is_active=True)
         ).distinct()
 
@@ -224,7 +224,7 @@ class JuryMemberViewSet(ModelViewSet):
 
     def get_queryset(self):
         return JuryMember.objects.filter(
-            Q(name__icontains="a") & Q(nominations__isnull=False)
+            Q(name__icontains="user") & Q(nominations__isnull=False)
         ).distinct()
 
     @action(detail=False, methods=["GET"])
