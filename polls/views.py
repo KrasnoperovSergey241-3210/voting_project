@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -7,8 +9,6 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from datetime import timedelta
-
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -97,7 +97,8 @@ class NominationViewSet(ModelViewSet):
     def controversial_or_trending(self, request):
         seven_days_ago = timezone.now() - timedelta(days=7)
         q = Q(votes__count__lt=3) & Q(is_active=True) | \
-            Q(votes__created_at__gte=seven_days_ago, votes__count__gt=5) & ~Q(is_active=False)
+            Q(votes__created_at__gte=seven_days_ago, votes__count__gt=5) \
+        & ~Q(is_active=False)
         queryset = self.get_queryset().filter(q).distinct()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -105,7 +106,8 @@ class NominationViewSet(ModelViewSet):
     @action(detail=False, methods=['get'])
     def jury_active_or_no_jury(self, request):
         q = Q(jury_members__is_active=True) & Q(is_active=True) | \
-            Q(jury_members=None) & Q(candidates__votes__count__gt=8) & ~Q(is_active=False)
+            Q(jury_members=None) & Q(candidates__votes__count__gt=8) \
+        & ~Q(is_active=False)
         queryset = self.get_queryset().filter(q).distinct()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

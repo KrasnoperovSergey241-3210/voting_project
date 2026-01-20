@@ -1,13 +1,11 @@
 from django.contrib import admin
-from django.db.models import Count
 from django.utils.html import format_html
-
 from import_export import resources
-from import_export.admin import ImportExportModelAdmin, ExportMixin
+from import_export.admin import ExportMixin, ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Candidate, Nomination, Vote
-from .models import JuryMember
+from .models import Candidate, JuryMember, Vote
+
 
 class VoteInline(admin.TabularInline):
     model = Vote
@@ -34,7 +32,8 @@ class NominationAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
 
 @admin.register(Candidate)
 class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
-    list_display = ('id', 'name', 'nomination', 'votes_count', 'has_photo', 'photo_preview')
+    list_display = ('id', 'name', 'nomination', 'votes_count',
+                    'has_photo', 'photo_preview')
     list_display_links = ('id', 'name')
     list_filter = ('nomination',)
     search_fields = ('name', 'nomination__title')
@@ -68,26 +67,51 @@ class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
     has_photo.short_description = "Есть фото"
 
 class VoteResource(resources.ModelResource):
+    unique_number = resources.Field(column_name='Уникальный номер',
+                                    attribute='id', readonly=True)
+    user_field = resources.Field(column_name='Пользователь',
+                                 attribute='user', readonly=True)
+    candidate_field = resources.Field(column_name='Кандидат',
+                                      attribute='candidate', readonly=True)
+    created_at_field = resources.Field(column_name='Дата голосования',
+                                       attribute='created_at', readonly=True)
+    candidate_user_field = resources.Field(column_name='Кандидат / Пользователь',
+                                    attribute='candidate_and_user', readonly=True)
+
     class Meta:
         model = Vote
-        fields = ('id', 'user', 'candidate', 'created_at')
+        fields = ('unique_number', 'user_field', 'candidate_field',
+                  'created_at_field', 'candidate_user_field')
+        export_order = ('unique_number', 'user_field', 'candidate_field',
+                        'created_at_field', 'candidate_user_field')
 
-    def dehydrate_user(self, vote):
-        return vote.user.username.upper()
+    def dehydrate_unique_number(self, vote):
+        return vote.id
 
-    def dehydrate_candidate(self, vote):
-        return f"{vote.candidate.name} ({vote.candidate.nomination.title})"
+    def dehydrate_user_field(self, vote):
+        return vote.user.username.upper() if vote.user and vote.user.username else "-"
 
-    def dehydrate_created_at(self, vote):
-        """Дополнительная кастомизация даты"""
-        return vote.created_at.strftime("%d.%m.%Y %H:%M")
+    def dehydrate_candidate_field(self, vote):
+        if vote.candidate and vote.candidate.nomination:
+            return f"{vote.candidate.name} ({vote.candidate.nomination.title})"
+        return "-"
+
+    def dehydrate_created_at_field(self, vote):
+        return vote.created_at.strftime(
+            "%d.%m.%Y %H:%M") if vote.created_at else "-"
+
+    def dehydrate_candidate_user_field(self, vote):
+        return \
+        f"{vote.candidate.name} — {vote.user.username}" \
+            if vote.candidate and vote.user else "-"
 
     def get_export_queryset(self, request):
-        """Кастомизация queryset для экспорта"""
-        return Vote.objects.filter(candidate__nomination__is_active=True)
+        return Vote.objects.filter(
+            candidate__nomination__is_active=True).select_related(
+            'user', 'candidate__nomination')
 
 @admin.register(Vote)
-class VoteAdmin(SimpleHistoryAdmin, ExportMixin, admin.ModelAdmin):
+class VoteAdmin(ExportMixin, SimpleHistoryAdmin, admin.ModelAdmin):
     resource_class = VoteResource
 
     list_display = ('id', 'user', 'candidate', 'created_at', 'candidate_and_user')
