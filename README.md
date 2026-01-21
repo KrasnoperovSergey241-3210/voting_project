@@ -8,7 +8,7 @@ python manage.py runserver
 
 ### Запуск в докере
 
-docker-compose up --build
+docker-compose up
 
 ### Management-команда для пересчёта голосов
 

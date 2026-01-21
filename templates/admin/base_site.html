@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+
+#changelist .changelist-form-container {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+}
+
+</style>
+{% endblock %}
