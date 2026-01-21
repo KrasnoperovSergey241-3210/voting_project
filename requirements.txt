@@ -7,3 +7,4 @@ django-import-export>=3.3
 django-filter>=23.5
 djangorestframework>=3.14
 ruff>=0.1.14
+whitenoise==6.6.0
