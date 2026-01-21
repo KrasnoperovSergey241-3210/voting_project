@@ -63,7 +63,6 @@ class NominationViewSet(ModelViewSet):
 
     @action(methods=["GET"], detail=False)
     def stats_summary(self, request):
-        """Пример ещё одного полезного action"""
         data = (
             Nomination.objects.filter(is_active=True)
             .annotate(
@@ -77,39 +76,72 @@ class NominationViewSet(ModelViewSet):
     @action(detail=False, methods=["get"])
     def recently_active_with_votes(self, request):
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        q = Q(created_at__gte=thirty_days_ago) & Q(is_active=True) | Q(
-            votes__count__gte=5
-        ) & ~Q(is_active=False)
-        queryset = self.get_queryset().filter(q).distinct()
+
+        queryset = (
+            self.get_queryset()
+            .annotate(vote_count=Count("candidates__votes", distinct=True))
+            .filter(
+                Q(created_at__gte=thirty_days_ago) & Q(is_active=True)
+                | Q(vote_count__gte=5)
+            )
+            .filter(~Q(is_active=False))
+            .distinct()
+        )
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def high_activity_or_old_active(self, request):
         ninety_days_ago = timezone.now() - timedelta(days=90)
-        q = Q(candidates__count__gt=10) & Q(is_active=True) | Q(
-            created_at__lte=ninety_days_ago
-        ) & ~Q(is_active=False)
-        queryset = self.get_queryset().filter(q).distinct()
+
+        queryset = (
+            self.get_queryset()
+            .annotate(candidate_count=Count("candidates"))
+            .filter(
+                (Q(candidate_count__gt=10) & Q(is_active=True))
+                | Q(created_at__lte=ninety_days_ago)
+            )
+            .filter(~Q(is_active=False))
+            .distinct()
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def controversial_or_trending(self, request):
         seven_days_ago = timezone.now() - timedelta(days=7)
-        q = Q(votes__count__lt=3) & Q(is_active=True) | Q(
-            votes__created_at__gte=seven_days_ago, votes__count__gt=5
-        ) & ~Q(is_active=False)
-        queryset = self.get_queryset().filter(q).distinct()
+
+        queryset = (
+            self.get_queryset()
+            .annotate(
+                total_votes=Count("candidates__votes", distinct=True),
+                recent_votes=Count(
+                    "candidates__votes",
+                    filter=Q(candidates__votes__created_at__gte=seven_days_ago),
+                    distinct=True,
+                ),
+            )
+            .filter((Q(total_votes__lt=3) & Q(is_active=True)) | Q(recent_votes__gt=5))
+            .filter(~Q(is_active=False))
+            .distinct()
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def jury_active_or_no_jury(self, request):
-        q = Q(jury_members__is_active=True) & Q(is_active=True) | Q(
-            jury_members=None
-        ) & Q(candidates__votes__count__gt=8) & ~Q(is_active=False)
-        queryset = self.get_queryset().filter(q).distinct()
+        queryset = (
+            self.get_queryset()
+            .filter(is_active=True)
+            .annotate(
+                jury_count=Count("jury_members", distinct=True),
+                vote_count=Count("candidates__votes", distinct=True),
+            )
+            .filter(Q(jury_count__gt=0) | (Q(jury_count=0) & Q(vote_count__gt=8)))
+            .distinct()
+        )
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
