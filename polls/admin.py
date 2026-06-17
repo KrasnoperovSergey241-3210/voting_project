@@ -18,6 +18,7 @@ from django.http import HttpRequest
 from django.utils.html import format_html
 from import_export import resources
 from import_export.admin import ExportMixin, ImportExportModelAdmin
+from import_export.formats.base_formats import CSV, XLSX
 from simple_history.admin import SimpleHistoryAdmin
 
 from .models import Candidate, JuryMember, Nomination, Vote
@@ -378,6 +379,15 @@ class VoteAdmin(ExportMixin, SimpleHistoryAdmin, admin.ModelAdmin):
             str: Формат "Кандидат — Пользователь".
         """
         return f"{obj.candidate.name} — {obj.user.username}"
+
+    def get_export_formats(self):
+        """
+        Возвращает доступные форматы для экспорта.
+
+        Returns:
+            list: Список доступных форматов (CSV и XLSX).
+        """
+        return [CSV, XLSX]
 
 
 @admin.register(JuryMember)

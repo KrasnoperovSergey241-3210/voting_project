@@ -1,6 +1,5 @@
 """
 View-функции и классы-представления для приложения polls.
-Содержит API ViewSet'ы и шаблонные представления.
 """
 
 from datetime import timedelta
@@ -45,10 +44,40 @@ from .serializers import (
 from .tasks import send_welcome_email
 
 
-# Вспомогательная функция для проверки прав администратора
-def admin_required(user):
-    """Проверяет, является ли пользователь администратором."""
-    return user.is_authenticated and user.is_staff
+class AdminRequiredMixin(UserPassesTestMixin):
+    """
+    Миксин для проверки прав администратора во всех запросах (GET и POST).
+    """
+
+    raise_exception = True
+
+    def test_func(self) -> bool:
+        """
+        Проверяет, является ли пользователь администратором.
+
+        Returns:
+            bool: True если пользователь администратор, иначе False.
+        """
+        return self.request.user.is_authenticated and self.request.user.is_staff
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Переопределяет dispatch для проверки прав при любом типе запроса.
+
+        Args:
+            request: HTTP запрос.
+            *args: Позиционные аргументы.
+            **kwargs: Именованные аргументы.
+
+        Returns:
+            HttpResponse: Ответ от представления или PermissionDenied.
+
+        Raises:
+            PermissionDenied: Если пользователь не является администратором.
+        """
+        if not self.test_func():
+            raise PermissionDenied("У вас нет прав для этого действия.")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -66,24 +95,6 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 50
 
 
-class AdminRequiredMixin(UserPassesTestMixin):
-    """
-    Миксин для проверки прав администратора во всех запросах (GET и POST).
-    """
-
-    def test_func(self) -> bool:
-        """Проверяет, является ли пользователь администратором."""
-        return self.request.user.is_authenticated and self.request.user.is_staff
-
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Переопределяем dispatch для проверки прав при любом типе запроса.
-        """
-        if not self.test_func():
-            raise PermissionDenied("У вас нет прав для этого действия.")
-        return super().dispatch(request, *args, **kwargs)
-
-
 class NominationViewSet(ModelViewSet):
     """
     ViewSet для управления номинациями.
@@ -91,15 +102,6 @@ class NominationViewSet(ModelViewSet):
     Права доступа:
         - Чтение (GET): все авторизованные пользователи
         - Создание, редактирование, удаление: только администраторы
-
-    Предоставляет CRUD операции и дополнительные действия:
-        - active: список активных номинаций
-        - stats: статистика голосов по кандидатам в номинации
-        - stats_summary: сводка по всем номинациям
-        - recently_active_with_votes: номинации с недавней активностью
-        - high_activity_or_old_active: номинации с высокой активностью или старые
-        - controversial_or_trending: спорные или трендовые номинации
-        - jury_active_or_no_jury: номинации с жюри или без него
 
     Attributes:
         queryset (QuerySet): Все номинации.
@@ -172,8 +174,6 @@ class NominationViewSet(ModelViewSet):
         """
         Возвращает номинации, созданные за последние 30 дней ИЛИ с >= 5 голосами.
 
-        Использует сложный Q-запрос с OR и AND.
-
         Args:
             request: HTTP запрос.
 
@@ -201,8 +201,6 @@ class NominationViewSet(ModelViewSet):
         """
         Возвращает номинации с > 10 кандидатами ИЛИ созданные более 90 дней назад.
 
-        Использует сложный Q-запрос с OR.
-
         Args:
             request: HTTP запрос.
 
@@ -228,8 +226,6 @@ class NominationViewSet(ModelViewSet):
     def controversial_or_trending(self, request: Request) -> Response:
         """
         Возвращает номинации с < 3 голосами ИЛИ > 5 голосов за последние 7 дней.
-
-        Использует сложный Q-запрос с OR.
 
         Args:
             request: HTTP запрос.
@@ -290,13 +286,6 @@ class CandidateViewSet(ModelViewSet):
         - Чтение (GET): все авторизованные пользователи
         - Создание, редактирование, удаление: только администраторы
 
-    Предоставляет CRUD операции и дополнительные действия:
-        - complex_filter: сложная фильтрация с Q
-        - popular: топ-10 популярных кандидатов
-        - special_candidates: специальная выборка кандидатов
-        - controversial: спорные кандидаты
-        - my_voted_and_popular: мои голоса + популярные
-
     Attributes:
         queryset (QuerySet): Все кандидаты.
         serializer_class (Serializer): Сериализатор для кандидатов.
@@ -328,10 +317,6 @@ class CandidateViewSet(ModelViewSet):
             QuerySet[Candidate]: Отфильтрованный queryset с аннотациями:
                 - vote_count: количество голосов
                 - favorites_count: количество добавлений в избранное
-
-        Note:
-            Фильтрует кандидатов по текущему пользователю (только те,
-            за которых пользователь голосовал) и по nomination_id.
         """
         user = self.request.user
         qs = (
@@ -612,13 +597,23 @@ class CandidateDetailView(LoginRequiredMixin, DetailView):
 
         Returns:
             Dict[str, Any]: Контекст с полями:
-                - user_voted: голосовал ли пользователь за этого кандидата
+                - user_voted_for_this_candidate: голосовал ли юзер за этого кандидата
+                - user_voted_in_nomination: голосовал ли пользователь в этой номинации
+                - user_voted_candidate_name: имя кандидата,за которого проголосовал юзер
                 - vote_count: общее количество голосов за кандидата
         """
         context = super().get_context_data(**kwargs)
-        context["user_voted"] = Vote.objects.filter(
+        user_vote = Vote.objects.filter(
+            user=self.request.user, candidate__nomination=self.object.nomination
+        ).first()
+
+        context["user_voted_for_this_candidate"] = Vote.objects.filter(
             user=self.request.user, candidate=self.object
         ).exists()
+        context["user_voted_in_nomination"] = user_vote is not None
+        context["user_voted_candidate_name"] = (
+            user_vote.candidate.name if user_vote else None
+        )
         context["vote_count"] = self.object.votes.count()
         return context
 
@@ -763,11 +758,6 @@ def vote_for_candidate(request: HttpRequest, pk: int) -> HttpResponse:
 
     Raises:
         Http404: Если кандидат не найден.
-
-    Note:
-        Проверяет:
-            - активна ли номинация
-            - не голосовал ли пользователь в этой номинации ранее
     """
     if request.method == "POST":
         candidate = get_object_or_404(Candidate, pk=pk)
@@ -797,11 +787,6 @@ def register(request: HttpRequest) -> HttpResponse:
     Returns:
         HttpResponse: При успехе - перенаправление на список номинаций,
                       при ошибке - страница регистрации с формой.
-
-    Note:
-        После успешной регистрации:
-            - пользователь автоматически авторизуется
-            - отправляется приветственное письмо (асинхронно)
     """
     if request.method == "POST":
         form = UserCreationForm(request.POST)
@@ -831,8 +816,5 @@ def test_500_view(request: HttpRequest) -> None:
 
     Raises:
         ZeroDivisionError: Всегда вызывает ошибку деления на ноль.
-
-    Note:
-        Используется для тестирования Sentry.
     """
     1 / 0

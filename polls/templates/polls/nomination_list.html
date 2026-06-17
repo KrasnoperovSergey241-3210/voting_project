@@ -3,177 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <title>Список номинаций</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #222222;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(233, 30, 99, 0.3);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .header-left span {
+            font-size: 28px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header-nav a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 25px;
+            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid transparent;
+        }
+        .header-nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        .header-nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        .logout-form {
+            display: flex;
+            align-items: center;
+        }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            width: auto;
+            min-width: unset;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: scale(1.03);
+        }
+        .logout-btn .username {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 24px;
+            letter-spacing: -0.3px;
+        }
+        .add-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            padding: 12px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(233, 30, 99, 0.35);
+            margin-bottom: 24px;
+        }
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.45);
+        }
+        .nomination-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .nomination-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+        .nomination-item:hover {
+            border-color: #e91e63;
+            box-shadow: 0 2px 12px rgba(233, 30, 99, 0.08);
+        }
+        .nomination-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #222222;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .admin-badge {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .nomination-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .nomination-actions a {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            background: #ffffff;
+        }
+        .nomination-actions a:hover {
+            border-color: #9c27b0;
+            color: #9c27b0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(156, 39, 176, 0.15);
+        }
+        .nomination-actions a.btn-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+        .nomination-actions a.btn-danger:hover {
+            background: #dc3545;
+            color: #ffffff;
+        }
+        .nomination-actions a.btn-primary {
+            color: #e91e63;
+            border-color: #e91e63;
+        }
+        .nomination-actions a.btn-primary:hover {
+            background: #c2185b;
+            color: #ffffff;
+            border-color: #c2185b;
+        }
+        .nomination-actions a.btn-outline {
+            color: #6c757d;
+        }
+        .nomination-actions a.btn-outline:hover {
+            border-color: #9c27b0;
+            color: #9c27b0;
+        }
+        .pagination {
+            display: grid;
+            max-width: 400px;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 20px auto;
+            padding: 16px 0;
+        }
+        .pagination a {
+            display: inline-block;
+            padding: 10px 24px;
+            border-radius: 30px;
+            max-width: 100px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            background: #ffffff;
+            color: #495057;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+        .pagination a:hover {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            border-color: transparent;
+            transform: translateY(-1px);
+        }
+        .pagination .current {
+            grid-column: 2;
+            text-align: center;
+            font-size: 15px;
+            color: #495057;
+            font-weight: 500;
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-left {
+                font-size: 20px;
+                justify-content: center;
+            }
+            .header-nav {
+                justify-content: center;
+            }
+            .header-nav a {
+                font-size: 14px;
+                padding: 6px 14px;
+            }
+            .header-right {
+                justify-content: center;
+            }
+            .logout-btn {
+                font-size: 14px;
+                padding: 8px 18px;
+            }
+            .container {
+                padding: 20px 16px;
+            }
+            .nomination-item {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 16px 20px;
+            }
+            .nomination-actions {
+                justify-content: flex-start;
+            }
+            .page-title {
+                font-size: 22px;
+            }
+        }
+    </style>
 </head>
-<style>
-    body {
-        background-color: #111111;
-        color: #ffffff;
-        font-family: Arial, sans-serif;
-        margin: 0;
-    }
-
-    ul {
-        list-style: none;
-        padding-left: 0;
-    }
-
-    li {
-        border: solid 2px #ffffff;
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 30px;
-        flex-wrap: wrap;
-    }
-
-    a, button {
-        display: block;
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease-in-out;
-        text-decoration: none;
-        text-align: center;
-    }
-
-    a:hover, button:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 4px #ffffff);
-        text-decoration: none;
-    }
-
-    header {
-        border-bottom: solid 2px #ffffff;
-        margin-bottom: 20px;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    h1 {
-        grid-column: 2;
-        text-align: center;
-    }
-
-    .exit-form {
-        grid-column: 3;
-        margin-right: 30px;
-        display: grid;
-    }
-
-    .exit-button {
-        padding: 10px;
-        text-align: center;
-        justify-self: right;
-        max-width: 140px;
-        max-height: 50px;
-        align-self: center;
-    }
-    
-    .actions a {
-        padding: 8px 20px;
-    }
-
-    section {
-        display: grid;
-        gap: 20px;
-        padding: 20px;
-    }
-
-    .add_button {
-        max-width: 230px;
-        text-align: center;
-    }
-
-    .actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .pagination {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        max-width: 420px;
-        width: 100%;
-        align-items: center;
-        margin: 0 auto;
-    }
-
-    .page_number_counter {
-        grid-column: 2;
-    }
-
-    .admin-badge {
-        background-color: #2d2d2d;
-        color: #ffcc00;
-        border: 1px solid #ffcc00;
-        border-radius: 12px;
-        padding: 4px 12px;
-        font-size: 0.8rem;
-        margin-left: 10px;
-    }
-
-    .no-permission {
-        color: #ff6666;
-        text-align: center;
-        padding: 20px;
-        border: 2px solid #ff6666;
-        border-radius: 20px;
-    }
-</style>
 <body>
-<header>
-    <h1>Номинации</h1>
-    {% if user.is_authenticated %}
-        <form class='exit-form' method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class='exit-button' type="submit">Выйти ({{ user.username }})</button>
-        </form>
-    {% endif %}
-</header>
+    <header class="header">
+        <div class="header-left">
+            <span>🗳️</span> MyVotingApp
+        </div>
+        <nav class="header-nav">
+            {% if user.is_staff %}
+                <a href="{% url 'nomination_list' %}" class="active">Номинации</a>
+                <a href="{% url 'admin:index' %}">Админка</a>
+            {% endif %}
+        </nav>
+        <div class="header-right">
+            {% if user.is_authenticated %}
+                <form class="logout-form" method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="logout-btn" type="submit">
+                        Выйти <span class="username">({{ user.username }})</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
 
-<section>
-    {% if user.is_staff %}
-        <a href="{% url 'nomination_add' %}" class="add_button">Добавить новую номинацию</a>
-    {% endif %}
+    <main class="container">
+        <h1 class="page-title">Номинации</h1>
 
-    <ul>
-        {% for nomination in page_obj %}
-        <li>
-            <strong>
-                {{ nomination.title }}
-                {% if user.is_staff %}
-                    <span class="admin-badge">Админ</span>
-                {% endif %}
-            </strong>
-            
-            <div class="actions">
-                {% if user.is_staff %}
-                    <a href="{% url 'nomination_edit' nomination.pk %}">Редактировать</a>
-                    <a href="{% url 'nomination_delete' nomination.pk %}">Удалить</a>
-                {% endif %}
-                <a href="{% url 'candidates_by_nomination' nomination.pk %}">Кандидаты</a>
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
-
-    <div class="pagination">
-        {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">Назад</a>
+        {% if user.is_staff %}
+            <a href="{% url 'nomination_add' %}" class="add-btn">Добавить новую номинацию</a>
         {% endif %}
 
-        <span class="page_number_counter">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+        <ul class="nomination-list">
+            {% for nomination in page_obj %}
+                <li class="nomination-item">
+                    <div class="nomination-title">
+                        {{ nomination.title }}
+                        {% if user.is_staff %}
+                            <span class="admin-badge">Админ</span>
+                        {% endif %}
+                    </div>
+                    <div class="nomination-actions">
+                        {% if user.is_staff %}
+                            <a href="{% url 'nomination_edit' nomination.pk %}" class="btn-primary">Редактировать</a>
+                            <a href="{% url 'nomination_delete' nomination.pk %}" class="btn-danger">Удалить</a>
+                        {% endif %}
+                        <a href="{% url 'candidates_by_nomination' nomination.pk %}" class="btn-outline">Кандидаты</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
 
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Вперёд</a>
-        {% endif %}
-    </div>
-</section>
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a style="justify-self: right;" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+            {% endif %}
+            <span class="current">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a style='justify-self: left;' href="?page={{ page_obj.next_page_number }}">Вперёд</a>
+            {% endif %}
+        </div>
+    </main>
 </body>
 </html>

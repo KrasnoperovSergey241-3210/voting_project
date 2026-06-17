@@ -3,135 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <title>Удалить номинацию</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #222222;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(233, 30, 99, 0.3);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .header-left span {
+            font-size: 28px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header-nav a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 25px;
+            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid transparent;
+        }
+        .header-nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        .header-nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        .logout-form {
+            display: flex;
+            align-items: center;
+        }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            width: auto;
+            min-width: unset;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: scale(1.03);
+        }
+        .logout-btn .username {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .warning-box {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            border-radius: 16px;
+            padding: 24px 32px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .warning-box .title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .warning-box .sub {
+            margin-top: 8px;
+            font-size: 15px;
+        }
+        .actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .actions a {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            background: #ffffff;
+        }
+        .actions a:hover {
+            border-color: #6c757d;
+            color: #222222;
+            transform: translateY(-1px);
+        }
+        .actions .btn-danger {
+            background: #dc3545;
+            color: #ffffff;
+            border-color: #dc3545;
+        }
+        .actions .btn-danger:hover {
+            background: #c82333;
+            border-color: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(220, 53, 69, 0.35);
+        }
+        .no-permission {
+            background: #fff5f5;
+            border: 1px solid #fcc;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #c0392b;
+        }
+        .no-permission a {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 28px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-left {
+                font-size: 20px;
+                justify-content: center;
+            }
+            .header-nav {
+                justify-content: center;
+            }
+            .header-nav a {
+                font-size: 14px;
+                padding: 6px 14px;
+            }
+            .header-right {
+                justify-content: center;
+            }
+            .logout-btn {
+                font-size: 14px;
+                padding: 8px 18px;
+            }
+            .container {
+                padding: 20px 16px;
+            }
+            .page-title {
+                font-size: 22px;
+            }
+            .warning-box {
+                padding: 18px 20px;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            .actions a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
-<style>
-    body {
-        background-color: #111111;
-        color: #ffffff;
-        font-family: Arial, sans-serif;
-        margin: 0px;
-    }
-
-    button {
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease-in-out;
-    }
-
-    button:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 4px #ffffff);
-    }
-
-    a {
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease-in-out;
-        text-decoration: none;
-    }
-
-    a:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 4px #ffffff);
-    }
-
-    h1 {
-        color: #ffffff;
-    }
-
-    header {
-        border-bottom: solid 2px #ffffff;
-        margin-bottom: 20px;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    h1 {
-        grid-column: 2;
-        text-align: center;
-    }
-
-    .exit-form {
-        grid-column: 3;
-        margin-right: 30px;
-        display: grid;
-    }
-
-    .exit-button {
-        padding: 10px;
-        text-align: center;
-        justify-self: right;
-        max-width: 140px;
-        max-height: 50px;
-        align-self: center;
-    }
-
-    .actions {
-        display: flex;
-        margin: 40px auto;
-        max-width: 400px;
-        justify-content: space-around;
-    }
-
-    .no-permission {
-        color: #ff6666;
-        text-align: center;
-        padding: 40px;
-        border: 2px solid #ff6666;
-        border-radius: 20px;
-        max-width: 500px;
-        margin: 40px auto;
-    }
-
-    .warning {
-        color: #ffcc00;
-        text-align: center;
-        margin: 20px 0;
-    }
-</style>
 <body>
-    <header>
-        <h1>Удалить номинацию: {{ object.title }}</h1>
-        {% if user.is_authenticated %}
-            <form class='exit-form' method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button class='exit-button' type="submit">Выйти ({{ user.username }})</button>
-            </form>
-        {% endif %}
+    <header class="header">
+        <div class="header-left">
+            <span>🗳️</span> MyVotingApp
+        </div>
+        <nav class="header-nav">
+            {% if user.is_staff %}
+                <a href="{% url 'nomination_list' %}" class="active">Номинации</a>
+                <a href="{% url 'admin:index' %}">Админка</a>
+            {% endif %}
+        </nav>
+        <div class="header-right">
+            {% if user.is_authenticated %}
+                <form class="logout-form" method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="logout-btn" type="submit">
+                        Выйти <span class="username">({{ user.username }})</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
     </header>
 
-    {% if user.is_staff %}
-        <div class="warning">
-            Вы уверены, что хотите удалить номинацию "{{ object.title }}"?
-            <br>
-            Это действие нельзя отменить!
-        </div>
-        <div class="actions">
-            <a href="{% url 'nomination_list' %}">Отмена</a>
-            <form method="post">
-                {% csrf_token %}
-                <button type="submit" style="border-color: #ff3333; color: #ff3333;">
-                    Подтвердить удаление
-                </button>
-            </form>
-        </div>
-    {% else %}
-        <div class="no-permission">
-            У вас нет прав для этого действия.<br>
-            Только администраторы могут удалять номинации.
-            <br><br>
-            <a href="{% url 'nomination_list' %}">Вернуться к списку</a>
-        </div>
-    {% endif %}
+    <main class="container">
+        <h1 class="page-title">Удалить номинацию: {{ object.title }}</h1>
+
+        {% if user.is_staff %}
+            <div class="warning-box">
+                <div class="title">Вы уверены, что хотите удалить номинацию "{{ object.title }}"?</div>
+                <div class="sub">Это действие нельзя отменить!</div>
+            </div>
+
+            <div class="actions">
+                <a href="{% url 'nomination_list' %}">Отмена</a>
+                <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="btn-danger" type="submit" style="border:none;padding:12px 32px;border-radius:30px;font-weight:500;font-size:15px;cursor:pointer;">
+                        Подтвердить удаление
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div class="no-permission">
+                У вас нет прав для этого действия.<br>
+                Только администраторы могут удалять номинации.
+                <br><br>
+                <a href="{% url 'nomination_list' %}">Вернуться к списку</a>
+            </div>
+        {% endif %}
+    </main>
 </body>
 </html>

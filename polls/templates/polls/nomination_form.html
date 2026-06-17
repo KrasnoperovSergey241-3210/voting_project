@@ -2,184 +2,307 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <title>
-        {% if object %}Редактировать{% else %}Добавить{% endif %} номинацию
-    </title>
+    <title>{% if object %}Редактировать{% else %}Добавить{% endif %} номинацию</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #222222;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(233, 30, 99, 0.3);
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .header-left span {
+            font-size: 28px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header-nav a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 25px;
+            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid transparent;
+        }
+        .header-nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        .header-nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        .logout-form {
+            display: flex;
+            align-items: center;
+        }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            width: auto;
+            min-width: unset;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: scale(1.03);
+        }
+        .logout-btn .username {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #222222;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .form-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 32px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+        .form-card form p {
+            margin-bottom: 18px;
+        }
+        .form-card form label {
+            display: block;
+            font-weight: 500;
+            color: #222222;
+            margin-bottom: 6px;
+        }
+        .form-card form input[type="text"],
+        .form-card form input[type="password"],
+        .form-card form input[type="email"],
+        .form-card form input[type="number"],
+        .form-card form select,
+        .form-card form textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #dee2e6;
+            font-size: 15px;
+            background: #f8f9fa;
+            color: #222222;
+            transition: all 0.2s ease;
+        }
+        .form-card form input:focus,
+        .form-card form select:focus,
+        .form-card form textarea:focus {
+            outline: none;
+            border-color: #e91e63;
+            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.12);
+            background: #ffffff;
+        }
+        .form-card form input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            accent-color: #e91e63;
+        }
+        .form-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .form-actions a {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            background: #ffffff;
+        }
+        .form-actions a:hover {
+            border-color: #6c757d;
+            color: #222222;
+            transform: translateY(-1px);
+        }
+        .form-actions .btn-submit {
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(233, 30, 99, 0.35);
+        }
+        .form-actions .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.45);
+        }
+        .no-permission {
+            background: #fff5f5;
+            border: 1px solid #fcc;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #c0392b;
+        }
+        .no-permission a {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 28px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #e91e63, #9c27b0);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-left {
+                font-size: 20px;
+                justify-content: center;
+            }
+            .header-nav {
+                justify-content: center;
+            }
+            .header-nav a {
+                font-size: 14px;
+                padding: 6px 14px;
+            }
+            .header-right {
+                justify-content: center;
+            }
+            .logout-btn {
+                font-size: 14px;
+                padding: 8px 18px;
+            }
+            .container {
+                padding: 20px 16px;
+            }
+            .page-title {
+                font-size: 22px;
+            }
+            .form-card {
+                padding: 20px;
+            }
+            .form-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            .form-actions a,
+            .form-actions .btn-submit {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
-<style>
-    body {
-        background-color: #111111;
-        color: #ffffff;
-        font-family: Arial, sans-serif;
-        margin: 0;
-    }
-
-    input {
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px;
-        font-size: 1rem;
-        width: 100%;
-        box-sizing: border-box;
-        transition: all 0.2s ease-in-out;
-    }
-
-    input:focus {
-        outline: none;
-        filter: drop-shadow(0 0 4px #ffffff);
-    }
-
-    button {
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease-in-out;
-    }
-
-    button:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 4px #ffffff);
-    }
-
-    a {
-        background-color: #111111;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        border-radius: 20px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease-in-out;
-        text-decoration: none;
-        display: inline-block;
-    }
-
-    a:hover {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 4px #ffffff);
-    }
-
-    header {
-        border-bottom: solid 2px #ffffff;
-        margin-bottom: 20px;
-        padding:0;
-    }
-
-    .header-grid {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        align-items: center;
-        margin: 0 auto;
-    }
-
-    h1 {
-        color: #ffffff;
-        margin: 20px 0;
-        text-align: center;
-        grid-column: 2;
-    }
-
-    .logout-wrapper {
-        grid-column: 3;
-        justify-self: end;
-        margin-right: 30px;
-    }
-
-    .exit-button {
-        padding: 8px 20px;
-        white-space: nowrap;
-    }
-
-    section {
-        padding: 40px;
-    }
-
-    p {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-    }
-
-    input[type="checkbox"] {
-        max-width: 20px;
-        height: 20px;
-    }
-
-    form {
-        margin: 0 auto;
-        max-width: 500px;
-        border: 2px #ffffff solid;
-        border-radius: 20px;
-        padding: 20px;
-        display: grid;
-        gap: 10px;
-    }
-
-    .actions {
-        margin-top: 20px;
-        display: flex;
-        justify-content: space-around;
-    }
-
-    .border-remover {
-        border: none;
-    }
-
-    .no-permission {
-        color: #ff6666;
-        text-align: center;
-        padding: 40px;
-        border: 2px solid #ff6666;
-        border-radius: 20px;
-        max-width: 500px;
-        margin: 0 auto;
-    }
-</style>
-
 <body>
-    <header>
-        <div class="header-grid">
-            <h1>
-                {% if object %}Редактировать{% else %}Добавить{% endif %} номинацию
-            </h1>
-
+    <header class="header">
+        <div class="header-left">
+            <span>🗳️</span> MyVotingApp
+        </div>
+        <nav class="header-nav">
+            {% if user.is_staff %}
+                <a href="{% url 'nomination_list' %}" class="active">Номинации</a>
+                <a href="{% url 'admin:index' %}">Админка</a>
+            {% endif %}
+        </nav>
+        <div class="header-right">
             {% if user.is_authenticated %}
-            <div class="logout-wrapper">
-                <form class='border-remover' method="post" action="{% url 'logout' %}">
+                <form class="logout-form" method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button class="exit-button" type="submit">
-                        Выйти ({{ user.username }})
+                    <button class="logout-btn" type="submit">
+                        Выйти <span class="username">({{ user.username }})</span>
                     </button>
                 </form>
-            </div>
             {% endif %}
         </div>
     </header>
 
-    <section>
+    <main class="container">
+        <h1 class="page-title">{% if object %}Редактировать{% else %}Добавить{% endif %} номинацию</h1>
+
         {% if user.is_staff %}
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <div class="actions">
-                    <a href="{% url 'nomination_list' %}">Назад к списку</a>
-                    <button type="submit">Сохранить</button>
-                </div>
-            </form>
+            <div class="form-card">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="form-actions">
+                        <a href="{% url 'nomination_list' %}">Назад к списку</a>
+                        <button class="btn-submit" type="submit">Сохранить</button>
+                    </div>
+                </form>
+            </div>
         {% else %}
             <div class="no-permission">
                 У вас нет прав для этого действия.<br>
                 Только администраторы могут создавать и редактировать номинации.
                 <br><br>
-                <a href="{% url 'nomination_list' %}">◀ Вернуться к списку</a>
+                <a href="{% url 'nomination_list' %}">Вернуться к списку</a>
             </div>
         {% endif %}
-    </section>
+    </main>
 </body>
 </html>
