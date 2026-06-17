@@ -11,6 +11,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -44,6 +45,12 @@ from .serializers import (
 from .tasks import send_welcome_email
 
 
+# Вспомогательная функция для проверки прав администратора
+def admin_required(user):
+    """Проверяет, является ли пользователь администратором."""
+    return user.is_authenticated and user.is_staff
+
+
 class StandardResultsSetPagination(PageNumberPagination):
     """
     Кастомная пагинация для API.
@@ -57,6 +64,24 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size = 12
     page_size_query_param = "page_size"
     max_page_size = 50
+
+
+class AdminRequiredMixin(UserPassesTestMixin):
+    """
+    Миксин для проверки прав администратора во всех запросах (GET и POST).
+    """
+
+    def test_func(self) -> bool:
+        """Проверяет, является ли пользователь администратором."""
+        return self.request.user.is_authenticated and self.request.user.is_staff
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Переопределяем dispatch для проверки прав при любом типе запроса.
+        """
+        if not self.test_func():
+            raise PermissionDenied("У вас нет прав для этого действия.")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class NominationViewSet(ModelViewSet):
@@ -620,12 +645,12 @@ class NominationListView(LoginRequiredMixin, ListView):
     login_url = "/login/"
 
 
-class NominationCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+class NominationCreateView(AdminRequiredMixin, CreateView):
     """
     Представление для создания новой номинации.
 
     Права доступа:
-        - Только для администраторов
+        - Только для администраторов (проверка при GET и POST)
 
     Attributes:
         model (Model): Модель Nomination.
@@ -639,22 +664,13 @@ class NominationCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = "polls/nomination_form.html"
     success_url = reverse_lazy("nomination_list")
 
-    def test_func(self) -> bool:
-        """
-        Проверяет, является ли пользователь администратором.
 
-        Returns:
-            bool: True если пользователь администратор, иначе False.
-        """
-        return self.request.user.is_staff
-
-
-class NominationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class NominationUpdateView(AdminRequiredMixin, UpdateView):
     """
     Представление для редактирования номинации.
 
     Права доступа:
-        - Только для администраторов
+        - Только для администраторов (проверка при GET и POST)
 
     Attributes:
         model (Model): Модель Nomination.
@@ -668,22 +684,13 @@ class NominationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = "polls/nomination_form.html"
     success_url = reverse_lazy("nomination_list")
 
-    def test_func(self) -> bool:
-        """
-        Проверяет, является ли пользователь администратором.
 
-        Returns:
-            bool: True если пользователь администратор, иначе False.
-        """
-        return self.request.user.is_staff
-
-
-class NominationDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+class NominationDeleteView(AdminRequiredMixin, DeleteView):
     """
     Представление для удаления номинации.
 
     Права доступа:
-        - Только для администраторов
+        - Только для администраторов (проверка при GET и POST)
 
     Attributes:
         model (Model): Модель Nomination.
@@ -694,15 +701,6 @@ class NominationDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Nomination
     template_name = "polls/nomination_confirm_delete.html"
     success_url = reverse_lazy("nomination_list")
-
-    def test_func(self) -> bool:
-        """
-        Проверяет, является ли пользователь администратором.
-
-        Returns:
-            bool: True если пользователь администратор, иначе False.
-        """
-        return self.request.user.is_staff
 
 
 class CandidatesByNominationView(LoginRequiredMixin, ListView):
