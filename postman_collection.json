@@ -1,0 +1,377 @@
+{
+  "info": {
+    "name": "Online Voting API",
+    "description": "API для онлайн-голосования с номинациями",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"password1\": \"testpass123\",\n    \"password2\": \"testpass123\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/register/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpass123\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/login/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://127.0.0.1:8000/logout/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nominations",
+      "item": [
+        {
+          "name": "List Nominations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations"]
+            }
+          }
+        },
+        {
+          "name": "Create Nomination",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Лучший актёр\",\n    \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations"]
+            }
+          }
+        },
+        {
+          "name": "Get Nomination Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/1/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Nomination",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Лучший актёр года\",\n    \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/1/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Nomination",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/1/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations", "1"]
+            }
+          }
+        },
+        {
+          "name": "Active Nominations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/nominations/active/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "nominations", "active"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidates",
+      "item": [
+        {
+          "name": "List Candidates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/candidates/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "candidates"]
+            }
+          }
+        },
+        {
+          "name": "List Candidates with filters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/candidates/?has_photo=true&min_votes=5",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "candidates"],
+              "query": [
+                {
+                  "key": "has_photo",
+                  "value": "true"
+                },
+                {
+                  "key": "min_votes",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Candidate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Иван Иванов\",\n    \"nomination_id\": 1\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/candidates/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "candidates"]
+            }
+          }
+        },
+        {
+          "name": "Get Candidate Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/candidates/1/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "candidates", "1"]
+            }
+          }
+        },
+        {
+          "name": "Popular Candidates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/candidates/popular/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "candidates", "popular"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Votes",
+      "item": [
+        {
+          "name": "List My Votes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/votes/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "votes"]
+            }
+          }
+        },
+        {
+          "name": "Create Vote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"candidate\": 1\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/votes/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "votes"]
+            }
+          }
+        },
+        {
+          "name": "Create Duplicate Vote (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"candidate\": 1\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/votes/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "votes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jury Members",
+      "item": [
+        {
+          "name": "List Jury Members",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/jury-members/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "jury-members"]
+            }
+          }
+        },
+        {
+          "name": "Create Jury Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Петр Петров\",\n    \"nominations\": [1, 2]\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/jury-members/",
+              "protocol": "http",
+              "host": ["127.0.0.1"],
+              "port": "8000",
+              "path": ["api", "jury-members"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

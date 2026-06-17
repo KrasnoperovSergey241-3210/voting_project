@@ -1,10 +1,48 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from django.utils.html import format_html
 from import_export import resources
 from import_export.admin import ExportMixin, ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Candidate, JuryMember, Vote
+from .models import Candidate, JuryMember, Nomination, Vote
+
+
+class UserAdmin(BaseUserAdmin):
+    list_display = ("username", "email", "first_name", "last_name", "is_staff")
+    list_filter = ("is_staff", "is_active")
+    search_fields = ("username", "email")
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("Персональная информация", {"fields": ("first_name", "last_name", "email")}),
+        (
+            "Права доступа",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        ("Важные даты", {"fields": ("last_login", "date_joined")}),
+    )
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("username", "email", "password1", "password2"),
+            },
+        ),
+    )
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 
 
 class VoteInline(admin.TabularInline):
@@ -30,8 +68,6 @@ class NominationAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
     def candidates_count(self, obj):
         return obj.candidates.count()
 
-    candidates_count.short_description = "Кол-во кандидатов"
-
 
 @admin.register(Candidate)
 class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
@@ -55,8 +91,6 @@ class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
     def votes_count(self, obj):
         return obj.votes.count()
 
-    votes_count.short_description = "Кол-во голосов"
-
     @admin.display(description="Фото", ordering=False)
     def photo_preview(self, obj):
         if obj.photo:
@@ -65,13 +99,9 @@ class CandidateAdmin(SimpleHistoryAdmin, ImportExportModelAdmin):
             )
         return "—"
 
-    photo_preview.short_description = "Фото"
-
     @admin.display(description="Есть фото", boolean=True)
     def has_photo(self, obj):
         return bool(obj.photo)
-
-    has_photo.short_description = "Есть фото"
 
 
 class VoteResource(resources.ModelResource):
@@ -153,11 +183,12 @@ class VoteAdmin(ExportMixin, SimpleHistoryAdmin, admin.ModelAdmin):
     def candidate_and_user(self, obj):
         return f"{obj.candidate.name} — {obj.user.username}"
 
-    candidate_and_user.short_description = "Кандидат / Пользователь"
-
 
 @admin.register(JuryMember)
 class JuryMemberAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
     filter_horizontal = ("nominations",)
+
+
+admin.site.register(Nomination, NominationAdmin)

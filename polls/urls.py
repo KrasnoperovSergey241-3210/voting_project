@@ -43,4 +43,5 @@ urlpatterns = [
         "candidates/<int:pk>/vote/", views.vote_for_candidate, name="vote_for_candidate"
     ),
     path("", include(router.urls)),
+    path("test-500/", views.test_500_view, name="test-500"),
 ]

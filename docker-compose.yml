@@ -1,7 +1,125 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: voting_db
+      POSTGRES_USER: voting_user
+      POSTGRES_PASSWORD: voting_password
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voting_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app-network
+
   web:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    volumes:
+      - sqlite_data:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgres://voting_user:voting_password@db:5432/voting_db
+      REDIS_URL: redis://redis:6379/0
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+      SENTRY_DSN: https://b1f845f635ab576dc9e35d26c8a34d90@o4511575746936832.ingest.us.sentry.io/4511575749754880
+      PYTHONUNBUFFERED: 1
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers=4"
+    networks:
+      - app-network
+
+  celery:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    volumes:
+      - sqlite_data:/app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://voting_user:voting_password@db:5432/voting_db
+      REDIS_URL: redis://redis:6379/0
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+    command: celery -A config worker --loglevel=info --concurrency=4
+    networks:
+      - app-network
+
+  celery-beat:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    volumes:
+      - sqlite_data:/app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://voting_user:voting_password@db:5432/voting_db
+      REDIS_URL: redis://redis:6379/0
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: 1025
+    command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  sqlite_data:
+
+networks:
+  app-network:
+    driver: bridge

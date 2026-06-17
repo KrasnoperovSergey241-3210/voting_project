@@ -170,6 +170,7 @@
                 <div class="actions">
                     <a href="{% url 'register' %}">Нет аккаунта? Зарегистрироваться</a>
                     <button type="submit">Войти</button>
+                    <a href="{% url 'social:begin' 'google-oauth2' %}">Войти через Google</a>
                 </div>
             </form>
         </div>
