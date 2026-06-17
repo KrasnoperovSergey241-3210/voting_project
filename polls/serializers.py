@@ -7,6 +7,7 @@
     - VoteSerializer
     - JuryMemberSerializer
 """
+
 from typing import Any, Dict, Optional
 
 from django.utils import timezone

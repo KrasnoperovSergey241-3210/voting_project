@@ -128,8 +128,17 @@
     }
 
     .border-remover {
-      border: none;
-      
+        border: none;
+    }
+
+    .no-permission {
+        color: #ff6666;
+        text-align: center;
+        padding: 40px;
+        border: 2px solid #ff6666;
+        border-radius: 20px;
+        max-width: 500px;
+        margin: 0 auto;
     }
 </style>
 
@@ -154,14 +163,23 @@
     </header>
 
     <section>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <div class="actions">
-                <a href="{% url 'nomination_list' %}">Назад к списку</a>
-                <button type="submit">Сохранить</button>
+        {% if user.is_staff %}
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="actions">
+                    <a href="{% url 'nomination_list' %}">Назад к списку</a>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="no-permission">
+                У вас нет прав для этого действия.<br>
+                Только администраторы могут создавать и редактировать номинации.
+                <br><br>
+                <a href="{% url 'nomination_list' %}">◀ Вернуться к списку</a>
             </div>
-        </form>
+        {% endif %}
     </section>
 </body>
 </html>

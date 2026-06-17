@@ -8,6 +8,7 @@
     - VoteAdmin: настройки для голосов
     - JuryMemberAdmin: настройки для членов жюри
 """
+
 from typing import Any
 
 from django.contrib import admin

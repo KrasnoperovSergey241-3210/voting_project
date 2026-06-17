@@ -8,6 +8,7 @@
     - Vote: Голос пользователя за кандидата
     - JuryMember: Член жюри
 """
+
 from typing import Any
 
 from django.contrib.auth import get_user_model

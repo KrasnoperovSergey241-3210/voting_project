@@ -2,6 +2,7 @@
 View-функции и классы-представления для приложения polls.
 Содержит API ViewSet'ы и шаблонные представления.
 """
+
 from datetime import timedelta
 from typing import Any, Dict, Optional
 
@@ -9,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count, Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -33,6 +34,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from .filters import CandidateFilter
 from .models import Candidate, FavoriteCandidate, JuryMember, Nomination, Vote
+from .permissions import IsAdminOrReadOnly, IsAdminUser, IsOwnerOrAdmin
 from .serializers import (
     CandidateSerializer,
     JuryMemberSerializer,
@@ -48,7 +50,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
     Attributes:
         page_size (int): Количество элементов на странице по умолчанию.
-        page_size_query_param(str):Название GET-параметра для изменения размера страницы
+        page_size_query_param (str): GET-параметр для изменения размера страницы.
         max_page_size (int): Максимальный размер страницы.
     """
 
@@ -60,6 +62,10 @@ class StandardResultsSetPagination(PageNumberPagination):
 class NominationViewSet(ModelViewSet):
     """
     ViewSet для управления номинациями.
+
+    Права доступа:
+        - Чтение (GET): все авторизованные пользователи
+        - Создание, редактирование, удаление: только администраторы
 
     Предоставляет CRUD операции и дополнительные действия:
         - active: список активных номинаций
@@ -73,12 +79,12 @@ class NominationViewSet(ModelViewSet):
     Attributes:
         queryset (QuerySet): Все номинации.
         serializer_class (Serializer): Сериализатор для номинаций.
-        permission_classes (list): Права доступа (только для авторизованных).
+        permission_classes (list): Права доступа.
     """
 
     queryset = Nomination.objects.all()
     serializer_class = NominationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     @action(methods=["GET"], detail=False)
     def active(self, request: Request) -> Response:
@@ -255,6 +261,10 @@ class CandidateViewSet(ModelViewSet):
     """
     ViewSet для управления кандидатами.
 
+    Права доступа:
+        - Чтение (GET): все авторизованные пользователи
+        - Создание, редактирование, удаление: только администраторы
+
     Предоставляет CRUD операции и дополнительные действия:
         - complex_filter: сложная фильтрация с Q
         - popular: топ-10 популярных кандидатов
@@ -265,7 +275,7 @@ class CandidateViewSet(ModelViewSet):
     Attributes:
         queryset (QuerySet): Все кандидаты.
         serializer_class (Serializer): Сериализатор для кандидатов.
-        permission_classes (list): Права доступа (только для авторизованных).
+        permission_classes (list): Права доступа.
         pagination_class (Pagination): Класс пагинации.
         filter_backends (list): Бэкенды фильтрации.
         filterset_class (FilterSet): Класс фильтров.
@@ -274,7 +284,7 @@ class CandidateViewSet(ModelViewSet):
 
     queryset = Candidate.objects.all().order_by("id")
     serializer_class = CandidateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     pagination_class = StandardResultsSetPagination
 
@@ -467,21 +477,31 @@ class VoteViewSet(ModelViewSet):
     """
     ViewSet для управления голосами пользователя.
 
+    Права доступа:
+        - Пользователь может управлять только своими голосами
+        - Администратор может управлять любыми голосами
+
     Attributes:
         serializer_class (Serializer): Сериализатор для голосов.
-        permission_classes (list): Права доступа (только для авторизованных).
+        permission_classes (list): Права доступа.
     """
 
     serializer_class = VoteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def get_queryset(self) -> QuerySet[Vote]:
         """
-        Возвращает голоса текущего пользователя с оптимизацией запросов.
+        Возвращает голоса с учетом прав доступа.
 
         Returns:
-            QuerySet[Vote]: Голоса пользователя с подгрузкой связанных данных.
+            QuerySet[Vote]:
+                - Для администратора: все голоса
+                - Для обычного пользователя: только его голоса
         """
+        if self.request.user.is_staff:
+            return Vote.objects.all().select_related(
+                "candidate", "candidate__nomination"
+            )
         return Vote.objects.filter(user=self.request.user).select_related(
             "candidate", "candidate__nomination"
         )
@@ -500,15 +520,18 @@ class JuryMemberViewSet(ModelViewSet):
     """
     ViewSet для управления членами жюри.
 
+    Права доступа:
+        - Только для администраторов (полный доступ)
+
     Attributes:
         queryset (QuerySet): Члены жюри с номинациями.
         serializer_class (Serializer): Сериализатор для членов жюри.
-        permission_classes (list): Права доступа (только для авторизованных).
+        permission_classes (list): Права доступа.
     """
 
     queryset = JuryMember.objects.all()
     serializer_class = JuryMemberSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_queryset(self) -> QuerySet[JuryMember]:
         """
@@ -539,6 +562,9 @@ class JuryMemberViewSet(ModelViewSet):
 class CandidateDetailView(LoginRequiredMixin, DetailView):
     """
     Представление для просмотра детальной информации о кандидате.
+
+    Права доступа:
+        - Только для авторизованных пользователей
 
     Attributes:
         model (Model): Модель Candidate.
@@ -576,6 +602,9 @@ class NominationListView(LoginRequiredMixin, ListView):
     """
     Представление для отображения списка номинаций с пагинацией.
 
+    Права доступа:
+        - Только для авторизованных пользователей
+
     Attributes:
         model (Model): Модель Nomination.
         template_name (str): Путь к шаблону.
@@ -591,9 +620,12 @@ class NominationListView(LoginRequiredMixin, ListView):
     login_url = "/login/"
 
 
-class NominationCreateView(LoginRequiredMixin, CreateView):
+class NominationCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """
     Представление для создания новой номинации.
+
+    Права доступа:
+        - Только для администраторов
 
     Attributes:
         model (Model): Модель Nomination.
@@ -607,10 +639,22 @@ class NominationCreateView(LoginRequiredMixin, CreateView):
     template_name = "polls/nomination_form.html"
     success_url = reverse_lazy("nomination_list")
 
+    def test_func(self) -> bool:
+        """
+        Проверяет, является ли пользователь администратором.
 
-class NominationUpdateView(LoginRequiredMixin, UpdateView):
+        Returns:
+            bool: True если пользователь администратор, иначе False.
+        """
+        return self.request.user.is_staff
+
+
+class NominationUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
     Представление для редактирования номинации.
+
+    Права доступа:
+        - Только для администраторов
 
     Attributes:
         model (Model): Модель Nomination.
@@ -624,10 +668,22 @@ class NominationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "polls/nomination_form.html"
     success_url = reverse_lazy("nomination_list")
 
+    def test_func(self) -> bool:
+        """
+        Проверяет, является ли пользователь администратором.
 
-class NominationDeleteView(LoginRequiredMixin, DeleteView):
+        Returns:
+            bool: True если пользователь администратор, иначе False.
+        """
+        return self.request.user.is_staff
+
+
+class NominationDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """
     Представление для удаления номинации.
+
+    Права доступа:
+        - Только для администраторов
 
     Attributes:
         model (Model): Модель Nomination.
@@ -639,10 +695,22 @@ class NominationDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "polls/nomination_confirm_delete.html"
     success_url = reverse_lazy("nomination_list")
 
+    def test_func(self) -> bool:
+        """
+        Проверяет, является ли пользователь администратором.
+
+        Returns:
+            bool: True если пользователь администратор, иначе False.
+        """
+        return self.request.user.is_staff
+
 
 class CandidatesByNominationView(LoginRequiredMixin, ListView):
     """
     Представление для отображения кандидатов в конкретной номинации.
+
+    Права доступа:
+        - Только для авторизованных пользователей
 
     Attributes:
         model (Model): Модель Candidate.

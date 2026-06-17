@@ -107,6 +107,24 @@
     .page_number_counter {
         grid-column: 2;
     }
+
+    .admin-badge {
+        background-color: #2d2d2d;
+        color: #ffcc00;
+        border: 1px solid #ffcc00;
+        border-radius: 12px;
+        padding: 4px 12px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+    }
+
+    .no-permission {
+        color: #ff6666;
+        text-align: center;
+        padding: 20px;
+        border: 2px solid #ff6666;
+        border-radius: 20px;
+    }
 </style>
 <body>
 <header>
@@ -120,16 +138,25 @@
 </header>
 
 <section>
-    <a href="{% url 'nomination_add' %}" class="add_button">Добавить новую номинацию</a>
+    {% if user.is_staff %}
+        <a href="{% url 'nomination_add' %}" class="add_button">Добавить новую номинацию</a>
+    {% endif %}
 
     <ul>
         {% for nomination in page_obj %}
         <li>
-            <strong>{{ nomination.title }}</strong>
+            <strong>
+                {{ nomination.title }}
+                {% if user.is_staff %}
+                    <span class="admin-badge">Админ</span>
+                {% endif %}
+            </strong>
             
             <div class="actions">
-                <a href="{% url 'nomination_edit' nomination.pk %}">Редактировать</a>
-                <a href="{% url 'nomination_delete' nomination.pk %}">Удалить</a>
+                {% if user.is_staff %}
+                    <a href="{% url 'nomination_edit' nomination.pk %}">Редактировать</a>
+                    <a href="{% url 'nomination_delete' nomination.pk %}">Удалить</a>
+                {% endif %}
                 <a href="{% url 'candidates_by_nomination' nomination.pk %}">Кандидаты</a>
             </div>
         </li>
