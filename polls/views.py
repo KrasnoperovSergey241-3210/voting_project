@@ -1,3 +1,7 @@
+"""
+View-функции и классы-представления для приложения polls.
+Содержит API ViewSet'ы и шаблонные представления.
+"""
 from datetime import timedelta
 from typing import Any, Dict, Optional
 
@@ -39,24 +43,70 @@ from .tasks import send_welcome_email
 
 
 class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Кастомная пагинация для API.
+
+    Attributes:
+        page_size (int): Количество элементов на странице по умолчанию.
+        page_size_query_param(str):Название GET-параметра для изменения размера страницы
+        max_page_size (int): Максимальный размер страницы.
+    """
+
     page_size = 12
     page_size_query_param = "page_size"
     max_page_size = 50
 
 
 class NominationViewSet(ModelViewSet):
+    """
+    ViewSet для управления номинациями.
+
+    Предоставляет CRUD операции и дополнительные действия:
+        - active: список активных номинаций
+        - stats: статистика голосов по кандидатам в номинации
+        - stats_summary: сводка по всем номинациям
+        - recently_active_with_votes: номинации с недавней активностью
+        - high_activity_or_old_active: номинации с высокой активностью или старые
+        - controversial_or_trending: спорные или трендовые номинации
+        - jury_active_or_no_jury: номинации с жюри или без него
+
+    Attributes:
+        queryset (QuerySet): Все номинации.
+        serializer_class (Serializer): Сериализатор для номинаций.
+        permission_classes (list): Права доступа (только для авторизованных).
+    """
+
     queryset = Nomination.objects.all()
     serializer_class = NominationSerializer
     permission_classes = [IsAuthenticated]
 
     @action(methods=["GET"], detail=False)
     def active(self, request: Request) -> Response:
+        """
+        Возвращает список активных номинаций.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Сериализованный список активных номинаций.
+        """
         nominations = Nomination.objects.filter(is_active=True)
         serializer = self.get_serializer(nominations, many=True)
         return Response(serializer.data)
 
     @action(methods=["POST"], detail=True)
     def stats(self, request: Request, pk: Optional[int] = None) -> Response:
+        """
+        Возвращает статистику голосов по кандидатам в конкретной номинации.
+
+        Args:
+            request: HTTP запрос.
+            pk: Идентификатор номинации.
+
+        Returns:
+            Response: Список кандидатов с количеством голосов.
+        """
         nomination = self.get_object()
         data = (
             Vote.objects.filter(candidate__nomination=nomination)
@@ -67,6 +117,15 @@ class NominationViewSet(ModelViewSet):
 
     @action(methods=["GET"], detail=False)
     def stats_summary(self, request: Request) -> Response:
+        """
+        Возвращает сводку по всем активным номинациям.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Данные о количестве кандидатов и голосов по номинациям.
+        """
         data = (
             Nomination.objects.filter(is_active=True)
             .annotate(
@@ -79,6 +138,17 @@ class NominationViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def recently_active_with_votes(self, request: Request) -> Response:
+        """
+        Возвращает номинации, созданные за последние 30 дней ИЛИ с >= 5 голосами.
+
+        Использует сложный Q-запрос с OR и AND.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список номинаций.
+        """
         thirty_days_ago = timezone.now() - timedelta(days=30)
 
         queryset = (
@@ -97,6 +167,17 @@ class NominationViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def high_activity_or_old_active(self, request: Request) -> Response:
+        """
+        Возвращает номинации с > 10 кандидатами ИЛИ созданные более 90 дней назад.
+
+        Использует сложный Q-запрос с OR.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список номинаций.
+        """
         ninety_days_ago = timezone.now() - timedelta(days=90)
 
         queryset = (
@@ -114,6 +195,17 @@ class NominationViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def controversial_or_trending(self, request: Request) -> Response:
+        """
+        Возвращает номинации с < 3 голосами ИЛИ > 5 голосов за последние 7 дней.
+
+        Использует сложный Q-запрос с OR.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список номинаций.
+        """
         seven_days_ago = timezone.now() - timedelta(days=7)
 
         queryset = (
@@ -135,6 +227,15 @@ class NominationViewSet(ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def jury_active_or_no_jury(self, request: Request) -> Response:
+        """
+        Возвращает активные номинации с жюри ИЛИ без жюри, но с > 8 голосами.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список номинаций.
+        """
         queryset = (
             self.get_queryset()
             .filter(is_active=True)
@@ -151,6 +252,26 @@ class NominationViewSet(ModelViewSet):
 
 
 class CandidateViewSet(ModelViewSet):
+    """
+    ViewSet для управления кандидатами.
+
+    Предоставляет CRUD операции и дополнительные действия:
+        - complex_filter: сложная фильтрация с Q
+        - popular: топ-10 популярных кандидатов
+        - special_candidates: специальная выборка кандидатов
+        - controversial: спорные кандидаты
+        - my_voted_and_popular: мои голоса + популярные
+
+    Attributes:
+        queryset (QuerySet): Все кандидаты.
+        serializer_class (Serializer): Сериализатор для кандидатов.
+        permission_classes (list): Права доступа (только для авторизованных).
+        pagination_class (Pagination): Класс пагинации.
+        filter_backends (list): Бэкенды фильтрации.
+        filterset_class (FilterSet): Класс фильтров.
+        search_fields (list): Поля для поиска.
+    """
+
     queryset = Candidate.objects.all().order_by("id")
     serializer_class = CandidateSerializer
     permission_classes = [IsAuthenticated]
@@ -165,6 +286,18 @@ class CandidateViewSet(ModelViewSet):
     search_fields = ["name"]
 
     def get_queryset(self) -> QuerySet[Candidate]:
+        """
+        Возвращает queryset кандидатов с аннотациями и фильтрацией.
+
+        Returns:
+            QuerySet[Candidate]: Отфильтрованный queryset с аннотациями:
+                - vote_count: количество голосов
+                - favorites_count: количество добавлений в избранное
+
+        Note:
+            Фильтрует кандидатов по текущему пользователю (только те,
+            за которых пользователь голосовал) и по nomination_id.
+        """
         user = self.request.user
         qs = (
             super()
@@ -184,6 +317,12 @@ class CandidateViewSet(ModelViewSet):
         return qs.distinct()
 
     def get_serializer_context(self) -> Dict[str, Any]:
+        """
+        Добавляет список избранных кандидатов в контекст сериализатора.
+
+        Returns:
+            Dict[str, Any]: Контекст с полем 'favorites'.
+        """
         context = super().get_serializer_context()
         if self.request.user.is_authenticated:
             favorites = FavoriteCandidate.objects.filter(
@@ -196,6 +335,19 @@ class CandidateViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def complex_filter(self, request: Request) -> Response:
+        """
+        Сложная фильтрация кандидатов с использованием Q.
+
+        Условия:
+            - имя содержит 'a' И пользователь не голосовал
+            ИЛИ номинация активна
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список кандидатов.
+        """
         user = request.user
         queryset = Candidate.objects.filter(
             (Q(name__icontains="a") & ~Q(votes__user=user))
@@ -207,6 +359,16 @@ class CandidateViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def popular(self, request: Request) -> Response:
+        """
+        Возвращает топ-10 самых популярных кандидатов.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Сериализованные данные кандидатов,
+                     отсортированные по убыванию голосов.
+        """
         qs = Candidate.objects.annotate(vote_count=Count("votes")).order_by(
             "-vote_count"
         )[:10]
@@ -215,6 +377,19 @@ class CandidateViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def special_candidates(self, request: Request) -> Response:
+        """
+        Специальная выборка кандидатов.
+
+        Условия:
+            - пользователь голосовал И номинация активна
+            ИЛИ есть голоса И есть фото
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список кандидатов.
+        """
         user = request.user
         queryset = (
             Candidate.objects.filter(
@@ -230,6 +405,19 @@ class CandidateViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def controversial(self, request: Request) -> Response:
+        """
+        Возвращает "спорных" кандидатов.
+
+        Условия:
+            - >= 5 голосов И номинация активна
+            ИЛИ 0 голосов И есть фото И пользователь не голосовал
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Отфильтрованный список кандидатов.
+        """
         user = request.user
 
         queryset = (
@@ -247,6 +435,19 @@ class CandidateViewSet(ModelViewSet):
 
     @action(detail=False, methods=["GET"])
     def my_voted_and_popular(self, request: Request) -> Response:
+        """
+        Возвращает кандидатов, за которых голосовал пользователь, ИЛИ популярных.
+
+        Условия:
+            - пользователь голосовал
+            ИЛИ >= 3 голосов
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Топ-10 кандидатов.
+        """
         user = request.user
 
         my_voted = Q(votes__user=user)
@@ -263,28 +464,72 @@ class CandidateViewSet(ModelViewSet):
 
 
 class VoteViewSet(ModelViewSet):
+    """
+    ViewSet для управления голосами пользователя.
+
+    Attributes:
+        serializer_class (Serializer): Сериализатор для голосов.
+        permission_classes (list): Права доступа (только для авторизованных).
+    """
+
     serializer_class = VoteSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self) -> QuerySet[Vote]:
+        """
+        Возвращает голоса текущего пользователя с оптимизацией запросов.
+
+        Returns:
+            QuerySet[Vote]: Голоса пользователя с подгрузкой связанных данных.
+        """
         return Vote.objects.filter(user=self.request.user).select_related(
             "candidate", "candidate__nomination"
         )
 
     def perform_create(self, serializer: VoteSerializer) -> None:
+        """
+        Сохраняет голос с привязкой к текущему пользователю.
+
+        Args:
+            serializer: Сериализатор с данными голоса.
+        """
         serializer.save(user=self.request.user)
 
 
 class JuryMemberViewSet(ModelViewSet):
+    """
+    ViewSet для управления членами жюри.
+
+    Attributes:
+        queryset (QuerySet): Члены жюри с номинациями.
+        serializer_class (Serializer): Сериализатор для членов жюри.
+        permission_classes (list): Права доступа (только для авторизованных).
+    """
+
     queryset = JuryMember.objects.all()
     serializer_class = JuryMemberSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self) -> QuerySet[JuryMember]:
+        """
+        Возвращает членов жюри, у которых есть номинации.
+
+        Returns:
+            QuerySet[JuryMember]: Отфильтрованный queryset.
+        """
         return JuryMember.objects.filter(Q(nominations__isnull=False)).distinct()
 
     @action(detail=False, methods=["GET"])
     def with_active_nominations(self, request: Request) -> Response:
+        """
+        Возвращает членов жюри, участвующих в активных номинациях.
+
+        Args:
+            request: HTTP запрос.
+
+        Returns:
+            Response: Сериализованный список членов жюри.
+        """
         queryset = JuryMember.objects.filter(nominations__is_active=True).distinct()
 
         serializer = self.get_serializer(queryset, many=True)
@@ -292,12 +537,33 @@ class JuryMemberViewSet(ModelViewSet):
 
 
 class CandidateDetailView(LoginRequiredMixin, DetailView):
+    """
+    Представление для просмотра детальной информации о кандидате.
+
+    Attributes:
+        model (Model): Модель Candidate.
+        template_name (str): Путь к шаблону.
+        context_object_name (str): Имя объекта в контексте.
+        login_url (str): URL для перенаправления при отсутствии авторизации.
+    """
+
     model = Candidate
     template_name = "polls/candidate_detail.html"
     context_object_name = "candidate"
     login_url = "/login/"
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Добавляет в контекст информацию о голосовании пользователя.
+
+        Args:
+            **kwargs: Дополнительные аргументы.
+
+        Returns:
+            Dict[str, Any]: Контекст с полями:
+                - user_voted: голосовал ли пользователь за этого кандидата
+                - vote_count: общее количество голосов за кандидата
+        """
         context = super().get_context_data(**kwargs)
         context["user_voted"] = Vote.objects.filter(
             user=self.request.user, candidate=self.object
@@ -307,6 +573,17 @@ class CandidateDetailView(LoginRequiredMixin, DetailView):
 
 
 class NominationListView(LoginRequiredMixin, ListView):
+    """
+    Представление для отображения списка номинаций с пагинацией.
+
+    Attributes:
+        model (Model): Модель Nomination.
+        template_name (str): Путь к шаблону.
+        context_object_name (str): Имя объекта в контексте.
+        paginate_by (int): Количество элементов на странице.
+        login_url (str): URL для перенаправления при отсутствии авторизации.
+    """
+
     model = Nomination
     template_name = "polls/nomination_list.html"
     context_object_name = "nominations"
@@ -315,6 +592,16 @@ class NominationListView(LoginRequiredMixin, ListView):
 
 
 class NominationCreateView(LoginRequiredMixin, CreateView):
+    """
+    Представление для создания новой номинации.
+
+    Attributes:
+        model (Model): Модель Nomination.
+        fields (list): Поля для отображения в форме.
+        template_name (str): Путь к шаблону.
+        success_url (str): URL для перенаправления после успешного создания.
+    """
+
     model = Nomination
     fields = ["title", "is_active"]
     template_name = "polls/nomination_form.html"
@@ -322,6 +609,16 @@ class NominationCreateView(LoginRequiredMixin, CreateView):
 
 
 class NominationUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Представление для редактирования номинации.
+
+    Attributes:
+        model (Model): Модель Nomination.
+        fields (list): Поля для отображения в форме.
+        template_name (str): Путь к шаблону.
+        success_url (str): URL для перенаправления после успешного обновления.
+    """
+
     model = Nomination
     fields = ["title", "is_active"]
     template_name = "polls/nomination_form.html"
@@ -329,24 +626,58 @@ class NominationUpdateView(LoginRequiredMixin, UpdateView):
 
 
 class NominationDeleteView(LoginRequiredMixin, DeleteView):
+    """
+    Представление для удаления номинации.
+
+    Attributes:
+        model (Model): Модель Nomination.
+        template_name (str): Путь к шаблону подтверждения.
+        success_url (str): URL для перенаправления после успешного удаления.
+    """
+
     model = Nomination
     template_name = "polls/nomination_confirm_delete.html"
     success_url = reverse_lazy("nomination_list")
 
 
 class CandidatesByNominationView(LoginRequiredMixin, ListView):
+    """
+    Представление для отображения кандидатов в конкретной номинации.
+
+    Attributes:
+        model (Model): Модель Candidate.
+        template_name (str): Путь к шаблону.
+        context_object_name (str): Имя объекта в контексте.
+        paginate_by (int): Количество элементов на странице.
+    """
+
     model = Candidate
     template_name = "polls/candidates_by_nomination.html"
     context_object_name = "candidates"
     paginate_by = 5
 
     def get_queryset(self) -> QuerySet[Candidate]:
+        """
+        Возвращает кандидатов для конкретной номинации.
+
+        Returns:
+            QuerySet[Candidate]: Кандидаты с подгрузкой связанной номинации.
+        """
         nomination_id = self.kwargs.get("nomination_id")
         return Candidate.objects.filter(nomination_id=nomination_id).select_related(
             "nomination"
         )
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Добавляет в контекст объект номинации.
+
+        Args:
+            **kwargs: Дополнительные аргументы.
+
+        Returns:
+            Dict[str, Any]: Контекст с полем 'nomination'.
+        """
         context = super().get_context_data(**kwargs)
         context["nomination"] = Nomination.objects.get(pk=self.kwargs["nomination_id"])
         return context
@@ -354,6 +685,24 @@ class CandidatesByNominationView(LoginRequiredMixin, ListView):
 
 @login_required
 def vote_for_candidate(request: HttpRequest, pk: int) -> HttpResponse:
+    """
+    Обработчик голосования за кандидата.
+
+    Args:
+        request: HTTP запрос.
+        pk: Идентификатор кандидата.
+
+    Returns:
+        HttpResponse: Перенаправление на страницу кандидата.
+
+    Raises:
+        Http404: Если кандидат не найден.
+
+    Note:
+        Проверяет:
+            - активна ли номинация
+            - не голосовал ли пользователь в этой номинации ранее
+    """
     if request.method == "POST":
         candidate = get_object_or_404(Candidate, pk=pk)
 
@@ -373,6 +722,21 @@ def vote_for_candidate(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 def register(request: HttpRequest) -> HttpResponse:
+    """
+    Регистрация нового пользователя.
+
+    Args:
+        request: HTTP запрос с данными формы регистрации.
+
+    Returns:
+        HttpResponse: При успехе - перенаправление на список номинаций,
+                      при ошибке - страница регистрации с формой.
+
+    Note:
+        После успешной регистрации:
+            - пользователь автоматически авторизуется
+            - отправляется приветственное письмо (асинхронно)
+    """
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -392,5 +756,17 @@ def register(request: HttpRequest) -> HttpResponse:
     return render(request, "registration/register.html", {"form": form})
 
 
-def test_500_view(request):
+def test_500_view(request: HttpRequest) -> None:
+    """
+    Тестовое представление для вызова ошибки 500.
+
+    Args:
+        request: HTTP запрос.
+
+    Raises:
+        ZeroDivisionError: Всегда вызывает ошибку деления на ноль.
+
+    Note:
+        Используется для тестирования Sentry.
+    """
     1 / 0
