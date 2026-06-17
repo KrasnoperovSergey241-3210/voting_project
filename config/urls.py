@@ -6,10 +6,9 @@ from django.urls import include, path
 from polls import views
 
 urlpatterns = [
-    path("test-500/", views.test_500_view, name="test-500"),  # Добавьте САМЫМ ПЕРВЫМ
+    path("test-500/", views.test_500_view, name="test-500"),
     path("admin/", admin.site.urls),
     path("silk/", include("silk.urls", namespace="silk")),
-    path("", include("polls.urls")),
     path("", include("django.contrib.auth.urls")),
     path("register/", views.register, name="register"),
     path("auth/", include("social_django.urls", namespace="social")),
