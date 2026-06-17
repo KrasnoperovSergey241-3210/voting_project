@@ -377,7 +377,7 @@ def register(request: HttpRequest) -> HttpResponse:
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             messages.success(request, "Регистрация успешна! Добро пожаловать!")
             send_welcome_email.delay(user.id)
             return redirect("nomination_list")
