@@ -17,7 +17,11 @@ SECRET_KEY = "django-insecure-44us@==%4vg5xydda30#n0crsuvp4b@kychtr4%2k#^a%6kq5h
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "voting-app-lolr.onrender.com",
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
