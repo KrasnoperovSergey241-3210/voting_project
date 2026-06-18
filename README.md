@@ -26,6 +26,8 @@ ruff check . --fix
 ruff check . 
 ruff format .
 git add .
+docker-compose logs celery
+docker-compose exec web python manage.py test
 ```
 
 ### Локальный запуск (без Docker)
