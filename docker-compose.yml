@@ -39,7 +39,9 @@ services:
       - app-network
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -51,7 +53,6 @@ services:
       mailhog:
         condition: service_started
     volumes:
-      - sqlite_data:/app
       - ./staticfiles:/app/staticfiles
       - ./media:/app/media
     env_file:
@@ -71,7 +72,9 @@ services:
       - app-network
 
   celery:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     depends_on:
       db:
@@ -80,8 +83,6 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-    volumes:
-      - sqlite_data:/app
     env_file:
       - .env
     environment:
@@ -94,7 +95,9 @@ services:
       - app-network
 
   celery-beat:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     depends_on:
       db:
@@ -103,8 +106,6 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-    volumes:
-      - sqlite_data:/app
     env_file:
       - .env
     environment:
@@ -118,7 +119,6 @@ services:
 
 volumes:
   postgres_data:
-  sqlite_data:
 
 networks:
   app-network:
